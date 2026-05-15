@@ -177,12 +177,17 @@ def scrape_all(topic: str = DEFAULT_TOPIC, per_page: int = PER_PAGE, delay: floa
 
 
 def check_repo_alive(repo_key: str) -> dict:
-    """Quick check if a GitHub repo is still accessible."""
+    """Quick check if a GitHub repo is still accessible. Uses GITHUB_TOKEN env var if available."""
+    import os
     url = f"https://api.github.com/repos/{repo_key}"
-    req = urllib.request.Request(url, headers={
+    headers = {
         "User-Agent": "AwesomeCatalogue/1.0",
         "Accept": "application/vnd.github.v3+json",
-    })
+    }
+    token = os.environ.get("GITHUB_TOKEN")
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    req = urllib.request.Request(url, headers=headers)
     try:
         with urllib.request.urlopen(req, timeout=10) as resp:
             data = json.loads(resp.read().decode("utf-8"))

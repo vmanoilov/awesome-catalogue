@@ -3,7 +3,6 @@ __pycache__/
 *.pyo
 .env
 logs/
-*.db
 *.db-wal
 *.db-shm
 .DS_Store
