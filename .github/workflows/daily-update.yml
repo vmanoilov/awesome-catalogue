@@ -1,0 +1,75 @@
+name: Daily Catalogue Update
+
+on:
+  schedule:
+    # Runs every day at 04:30 UTC
+    - cron: '30 4 * * *'
+  workflow_dispatch:
+    # Manual trigger from GitHub UI
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install beautifulsoup4 lxml
+
+      - name: Run full update pipeline
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AWESOME_DB: data/catalogue.db
+        run: |
+          echo "=== Starting catalogue update ==="
+          python scripts/daily_update_cron.py
+          echo "=== Update complete ==="
+
+      - name: Check for changes
+        id: changes
+        run: |
+          git diff --quiet data/ && echo "changed=false" >> $GITHUB_OUTPUT || echo "changed=true" >> $GITHUB_OUTPUT
+
+      - name: Commit and push updated data
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          AWESOME_DB: data/catalogue.db
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          STATS=$(python -c "
+          import sys; sys.path.insert(0, 'scripts')
+          from catalogue import get_stats
+          s = get_stats()
+          print(f\"{s['total_active']} active, {s['total_purged']} purged\")
+          " 2>/dev/null || echo "update complete")
+          git commit -m "chore: daily catalogue update — ${STATS}"
+          git push
+
+      - name: Summary
+        if: always()
+        env:
+          AWESOME_DB: data/catalogue.db
+        run: |
+          echo "### Catalogue Update Summary" >> $GITHUB_STEP_SUMMARY
+          python -c "
+          import sys; sys.path.insert(0, 'scripts')
+          from catalogue import get_stats
+          s = get_stats()
+          print(f'- **Active repos:** {s[\"total_active\"]}')
+          print(f'- **Purged:** {s[\"total_purged\"]}')
+          print(f'- **Freshness:** {s[\"freshness\"]}')
+          print(f'- **Top domains:** {dict(list(sorted(s[\"domains\"].items(), key=lambda x: -x[1]))[:5])}')
+          " >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo "- Could not generate stats" >> $GITHUB_STEP_SUMMARY
