@@ -215,7 +215,7 @@ def build_html(db_path: str = DB_PATH, output: str = None) -> str:
 </div>
 
 <div class="footer">
-  Awesome-List Catalogue · Data from <a href="https://awesome.ecosyste.ms" style="color:var(--accent)">Ecosyste.ms</a> · Built by Viktor
+  Awesome-List Catalogue · Data from <a href="https://awesome.ecosyste.ms" style="color:var(--accent)">Ecosyste.ms</a>
 </div>
 
 <script>
