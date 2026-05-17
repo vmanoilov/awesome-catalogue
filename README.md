@@ -118,4 +118,4 @@ The script includes:
 Data sourced from [Ecosyste.ms](https://awesome.ecosyste.ms) and GitHub. This tool is provided as-is for personal use.
 
 ---
-Built by [Viktor](https://viktor.com)
+
